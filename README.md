@@ -1,24 +1,32 @@
 ﻿# KeyLoop
 
-Windows 用のキー送信ツールです。入力のない状態が指定した時間続くと、選んだキーを定期的に送信します。
+A key sender for Windows. When the PC has had no keyboard or mouse input for a set time, KeyLoop sends the key you chose, and keeps sending it at that interval. It runs on Windows PowerShell 5.1 alone and needs no administrator rights.
 
-## インストールと起動
+## Install and start
 
-固定の場所へ展開して `install.bat` を実行してください。管理者権限は不要で、現在のユーザーの HKCU にだけ登録します。エクスプローラの空白またはデスクトップの空白を右クリックして `KeyLoop` を選びます。ファイル・フォルダを選択して開いたメニューには登録しません。
+Put the folder in a fixed place and run `install.bat`. It registers only under HKCU for the current user, shows the result, and waits for a key before closing. Right-click an empty area of an Explorer folder or of the desktop and choose `KeyLoop`. It is not added to the menu of selected files or folders.
 
-`KeyLoop` のサブメニューには `Default` と `Custom...` が表示されます。
+The `KeyLoop` submenu has `Default` and `Custom...`.
 
-- `Default`：待機時間120秒、実行時間の制限なし、送信キー `0x07` で起動します。
-- `Custom...`：待機時間、実行時間、送信キーを対話入力します。
+- `Default`: idle time 120 seconds, no run time limit, key `0x07`.
+- `Custom...`: choose the idle time, the run time and the key on screen.
 
-実行中はコンソールが表示されます。Ctrl+C で停止できます。送信キーがアプリに与える影響と、組織の端末利用ルールを確認して使用してください。
+From the right-click menu, KeyLoop opens in the classic console window (conhost), even where Windows Terminal is the default terminal, so the window fits the KeyLoop screen.
 
-Windows 11 でメニューが見えない場合は「その他のオプションを表示」から開きます。
+Choose the key from the list, or use `Enter a key code` to type a hex virtual-key code, or `Press a key` to press the key you want to send. A pressed key is recorded even if it is Shift or Ctrl alone, and nothing is decided until you choose `Use this key`.
 
-直接起動する場合は `KeyLoop.cmd` を実行してください。既定値での起動は `KeyLoop.cmd -Key 0x07 -Idle 120 -MaxRun 0` です。
+While running, the screen shows the seconds until the next send, how many keys were sent, when the last one was sent, the running time and the time left. Press Ctrl+C to stop. Check what the key does in your applications, and your organization's rules for the PC, before using it.
 
-## 削除と移動
+If an error happens while starting, the window stays open with the reason until you press a key.
 
-`uninstall.bat` はこのコピーが登録した KeyLoop の背景メニューだけを解除します。アプリ本体は削除しません。
+On Windows 11, if the menu is not visible, open "Show more options".
 
-配置を変えたら移動先で `install.bat` を再実行してください。移動元の `uninstall.bat` を実行しても、移動先で登録したメニューは残ります。
+To start directly, run `KeyLoop.cmd`. The default start is `KeyLoop.cmd -Key 0x07 -Idle 120 -MaxRun 0`.
+
+The first start, and the first start after an update, compiles the screens and saves them in `%LOCALAPPDATA%\KeyLoop`. Later starts load that file, which is faster. The folder can be deleted; it is rebuilt on the next start.
+
+## Remove and move
+
+`uninstall.bat` lists the right-click menu entries registered for the current user. Choose one with Up/Down and press Enter to remove it, or press Esc to cancel. Before removing, it saves a backup of the chosen entry in `output\context-menu-backups`, then shows what was removed and where the backup is. It does not delete the application files.
+
+After moving the folder, run `install.bat` again in the new place.

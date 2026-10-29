@@ -6,9 +6,12 @@ $script:App = [IO.File]::ReadAllText((Join-Path $script:StandaloneRoot 'app.json
 if ($script:App.Id -ne 'KeyLoop') { throw 'Unknown standalone application.' }
 
 function Get-MenuPlan {
+    # conhost.exe opens the classic console window even where Windows Terminal is the default
+    # terminal; only that window can be shrunk to the KeyLoop screen.
+    $conhost = Join-Path $env:SystemRoot 'System32\conhost.exe'
     $powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
     $entry = Join-Path $script:StandaloneRoot 'src\app\main.ps1'
-    $baseCommand = '"{0}" -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -File "{1}"' -f $powershell, $entry
+    $baseCommand = '"{0}" "{1}" -NoLogo -NoProfile -STA -ExecutionPolicy Bypass -File "{2}"' -f $conhost, $powershell, $entry
     $command = ''
     $children = @(
         [pscustomobject]@{ Id = '01-default'; Label = 'Default'; Command = $baseCommand + ' -Key 0x07 -Idle 120 -MaxRun 0' },
@@ -49,9 +52,8 @@ public static class StandaloneMenuNotify {
 function Install-StandaloneMenu {
     if ($env:OS -ne 'Windows_NT') { throw 'Windows is required.' }
     $entry = Join-Path $script:StandaloneRoot 'src\app\main.ps1'
-    if (-not [IO.File]::Exists($entry)) { throw ('Application entry not found: ' + $entry) }
-    if (-not [IO.File]::Exists((Join-Path $script:StandaloneRoot 'common\ui.ps1'))) {
-        throw 'The local KeyLoop UI helper is missing.'
+    foreach ($file in @($entry, (Join-Path $script:StandaloneRoot 'src\app\KeyLoop.cs'))) {
+        if (-not [IO.File]::Exists($file)) { throw ('KeyLoop file not found: ' + $file) }
     }
     foreach ($item in @(Get-MenuPlan)) {
         # Delete only this application's canonical verb, never the containing shell key.
@@ -80,21 +82,4 @@ function Install-StandaloneMenu {
         finally { $key.Dispose() }
     }
     Send-MenuChanged
-    Write-Host ($script:App.Name + ': installed for Explorer background and desktop background (current user).')
-}
-
-function Uninstall-StandaloneMenu {
-    foreach ($item in @(Get-MenuPlan)) {
-        $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($item.Path)
-        if ($null -eq $key) { continue }
-        try { $owner = [string]$key.GetValue('InstallRoot', '') } finally { $key.Dispose() }
-        # An uninstaller from an old/moved copy must not remove a newer installation.
-        if (-not [string]::Equals($owner, $script:StandaloneRoot, [StringComparison]::OrdinalIgnoreCase)) {
-            Write-Warning ('Not owned by this copy; left unchanged: HKCU\' + $item.Path)
-            continue
-        }
-        [Microsoft.Win32.Registry]::CurrentUser.DeleteSubKeyTree($item.Path, $false)
-    }
-    Send-MenuChanged
-    Write-Host ($script:App.Name + ': menu removal finished. Application files and output were not deleted.')
 }
